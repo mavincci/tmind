@@ -68,15 +68,11 @@ void processTransactionData(List<TransactionData> txns) {
       .where((element) => element.issuer.compareTo("EthSwitch") != 0)
       .where((element) => element.amount > 5);
 
-  print("\n\n");
-
   // settledTxns.forEach((element) {
   //   print("${element.rrn}: ${element.transactionPlace}: ${element.amount}");
   // });
 
   // print(settledTxns.first.toJson());
-
-  print("\n\n");
 
   final categorized = categorizeByTerminalId(settledTxns.toList());
 
@@ -90,15 +86,7 @@ void processTransactionData(List<TransactionData> txns) {
 
   summaries.sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
 
-  summaries.forEach((element) {
-    final st = sprintf("%s ----- %5i ----- ETB %10.02f", [
-      element.terminalId,
-      element.numberOfTransactions,
-      element.totalAmount,
-    ]);
-
-    print(st);
-  });
+  saveSummaryData(summaries);
 
   // categorized.entries.forEach((entry) {
   //   // print("\n-------> ${entry.key}");
@@ -119,6 +107,68 @@ void processTransactionData(List<TransactionData> txns) {
   //   // print(
   //   // "Total amount: ${entry.value.fold(0.0, (previousValue, txn) => txn.amount + previousValue).toStringAsFixed(2)}");
   // });
+}
+
+void saveSummaryData(List<TransactionSummary> summaries) {
+  // summaries.forEach((element) {
+  //   final st = sprintf("%s ----- %5i ----- ETB %10.02f", [
+  //     element.terminalId,
+  //     element.numberOfTransactions,
+  //     element.totalAmount,
+  //   ]);
+
+  //   print(st);
+  // });
+
+  print("Generating output ...");
+
+  final outXlsx = Excel.createExcel();
+  final sheet = outXlsx["Sheet1"];
+
+  summaries.indexed.forEach((element) {
+    final i = element.$1;
+    final txnSummary = element.$2;
+
+    final terminalIdCell =
+        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: i));
+
+    terminalIdCell.value = TextCellValue(txnSummary.terminalId);
+
+    final noOfTransactionsCell =
+        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: i));
+    noOfTransactionsCell.value =
+        TextCellValue(txnSummary.numberOfTransactions.toString());
+
+    final totalAmountCell =
+        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: i));
+    totalAmountCell.value =
+        TextCellValue(txnSummary.totalAmount.toStringAsFixed(2));
+  });
+
+  // for (var i = 0; i < summaries.length; ++i) {
+  //   final terminalIdCell =
+  //       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: i + 1));
+
+  //       terminalIdCell.value = TextCellValue(summaries[i].terminalId);
+
+  //   final noOfTransacrionsCell =
+  //       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: i + 1));
+  //       noOfTransacrionsCell.value = IntCellValue(su)
+
+  //   final totalTransactionsCell =
+  //       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: i + 1));
+  // }
+
+  print("Finished generating output");
+  print("Creating output file ...");
+
+  final outXlsxBytes = outXlsx.save(fileName: "testing file");
+
+  final outFile = File("output.xlsx");
+
+  outFile.writeAsBytesSync(outXlsxBytes!);
+
+  print("Finished creating output file");
 }
 
 List<TransactionData> processFile(String xlsFilePath) {
